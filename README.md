@@ -13,6 +13,63 @@ Mama Amaka is an intelligent recipe assistant that combines the power of vector 
 
 The assistant is designed with a warm, friendly personality ("Mama Amaka") that makes learning about Nigerian cuisine an engaging experience. It supports multiple LLM providers (OpenAI, Groq, Google Gemini) for flexibility and cost optimization.
 
+## Project Scope
+
+### Domain Definition
+
+**Document Domain**: Nigerian Cuisine Recipes
+- **Primary Focus**: Traditional Nigerian recipes, cooking methods, and ingredients
+- **Content Type**: Structured recipe documents containing:
+  - Recipe names and descriptions
+  - Ingredient lists with quantities
+  - Step-by-step cooking instructions
+  - Serving sizes and preparation tips
+  - Cultural context and variations
+
+**Current Knowledge Base**: 
+- 6 core Nigerian recipes (Jollof Rice, Egusi Soup, Coconut Rice, Moi-Moi, Edikainkon, Yam and Egg Sauce)
+- Extensible to additional recipes via the `data/` directory
+
+**Limitations**:
+- Focused exclusively on Nigerian cuisine (not general cooking)
+- Text-based recipes only (no image processing)
+- English language support (no multilingual support yet)
+
+### Supported Query Types
+
+The system is optimized for the following query categories:
+
+1. **Factual Queries** - "What is jollof rice?"
+   - Definition and description questions
+   - Ingredient identification
+   - Recipe characteristics
+
+2. **Procedural Queries** - "How do I make egusi soup?"
+   - Step-by-step cooking instructions
+   - Preparation methods
+   - Cooking techniques
+
+3. **Ingredient Queries** - "What ingredients do I need for coconut rice?"
+   - Ingredient lists
+   - Quantities and measurements
+   - Ingredient substitutions
+
+4. **Comparative Queries** - "What's the difference between jollof and coconut rice?"
+   - Recipe comparisons
+   - Method variations
+   - Regional differences
+
+5. **Specific Detail Queries** - "How long does it take to cook moi-moi?"
+   - Cooking times
+   - Serving sizes
+   - Preparation tips
+
+**Unsupported Query Types**:
+- Questions outside Nigerian cuisine domain
+- Nutritional information calculations
+- Recipe scaling/math calculations
+- Image-based queries
+
 ## Target Audience
 
 This project is designed for:
@@ -208,10 +265,82 @@ agent = MamaAmakaAgent()
 # Load and index documents
 agent.ingest_data()
 
-# Ask questions
-answer = agent.ask("What is jollof rice?")
-print(answer)
+# Ask questions - returns dict with answer and metadata
+result = agent.ask("What is jollof rice?", n_results=3, verbose=False)
+print(result["answer"])
+print(f"Sources: {result['sources']}")
+print(f"Retrieved {result['num_chunks']} chunks")
+print(f"Similarity scores: {result['similarity_scores']}")
 ```
+
+### Retrieval Evaluation
+
+The `ask()` method now returns detailed evaluation metrics:
+
+```python
+result = agent.ask("How do I make egusi soup?", min_similarity=0.3)
+
+# Access evaluation metrics
+print(f"Answer: {result['answer']}")
+print(f"Sources used: {result['sources']}")
+print(f"Number of chunks: {result['num_chunks']}")
+print(f"Similarity scores: {result['similarity_scores']}")
+```
+
+**Evaluation Parameters**:
+- `n_results`: Number of chunks to retrieve (default: 3)
+- `min_similarity`: Minimum similarity threshold 0.0-1.0 (default: 0.0)
+- `verbose`: Print detailed retrieval information (default: True)
+
+## Document Domain & Query Processing
+
+### Document Domain Specification
+
+**Domain**: Nigerian Cuisine Recipes
+- **Scope**: Traditional and contemporary Nigerian recipes
+- **Document Structure**: Recipe documents with standardized sections:
+  - Title/Name
+  - Description/Introduction
+  - Ingredients list
+  - Cooking method/instructions
+  - Serving information
+  - Optional tips and variations
+
+**Document Characteristics**:
+- Average length: 500-2000 characters per recipe
+- Language: English
+- Format: Plain text with structured sections
+- Encoding: UTF-8
+
+### Query Type Classification
+
+The system processes queries across these categories:
+
+| Query Type | Example | Expected Response |
+|------------|---------|-------------------|
+| **Definition** | "What is jollof rice?" | Recipe description and cultural context |
+| **Ingredients** | "What do I need for egusi soup?" | Complete ingredient list with quantities |
+| **Instructions** | "How do I cook coconut rice?" | Step-by-step cooking method |
+| **Comparison** | "Difference between jollof and fried rice" | Comparative analysis of recipes |
+| **Specific Detail** | "Cooking time for moi-moi" | Specific information extraction |
+| **Tips/Advice** | "Best way to prepare yam" | Preparation tips and techniques |
+
+### Query Processing Pipeline
+
+1. **Query Normalization**: Input sanitization and preprocessing
+2. **Semantic Search**: Vector similarity search in embedding space
+3. **Relevance Scoring**: Distance-based ranking of retrieved chunks
+4. **Context Assembly**: Top-K chunk aggregation with metadata
+5. **Response Generation**: LLM-based answer synthesis
+
+### Retrieval Evaluation
+
+The system includes evaluation metrics for retrieval quality:
+
+- **Similarity Scores**: Cosine distance scores for each retrieved chunk
+- **Relevance Threshold**: Configurable minimum similarity threshold
+- **Top-K Retrieval**: Default 3 chunks, adjustable based on query complexity
+- **Source Attribution**: Each response includes recipe source information
 
 ## Data Requirements
 
@@ -478,6 +607,21 @@ Contributions are welcome! Please follow these guidelines:
 - Recipe image processing
 
 ## Changelog
+
+### Version 0.2.0 (2025-01-XX)
+
+**Enhanced Release - Addressing Feedback**
+- ✅ **Document Domain Definition**: Clear specification of Nigerian cuisine domain
+- ✅ **Query Type Classification**: Support for 5 query categories (factual, procedural, ingredient, comparative, specific)
+- ✅ **Retrieval Evaluation**: Enhanced `ask()` method with similarity scores and source attribution
+- ✅ **Query Processing Refinement**: Minimum similarity thresholds and verbose evaluation metrics
+- ✅ **Project Scope Clarification**: Explicit limitations and supported use cases
+
+**New Features:**
+- Retrieval evaluation metrics (similarity scores, source tracking)
+- Configurable similarity thresholds for filtering results
+- Enhanced return type with evaluation metadata
+- Query type documentation and examples
 
 ### Version 0.1.0 (2025-01-XX)
 

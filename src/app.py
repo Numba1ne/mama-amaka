@@ -1,7 +1,7 @@
 import os
 import glob
 import sys
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -139,44 +139,97 @@ Answer as Mama Amaka:"""
         else:
             print("No recipes found to ingest.")
 
-    def ask(self, query: str, n_results: int = 3) -> str:
+    def ask(self, query: str, n_results: int = 3, min_similarity: float = 0.0, verbose: bool = True) -> Dict[str, Any]:
         """
-        Query the RAG assistant (Step 7 from template).
+        Query the RAG assistant with enhanced retrieval evaluation (Step 7 from template).
         
         Args:
             query: User's question
             n_results: Number of relevant chunks to retrieve
+            min_similarity: Minimum similarity threshold (0.0-1.0, lower is more similar)
+            verbose: Whether to print detailed retrieval information
             
         Returns:
-            String containing the answer from the LLM
+            Dictionary containing:
+                - answer: Generated response string
+                - sources: List of source documents used
+                - similarity_scores: List of similarity scores for retrieved chunks
+                - num_chunks: Number of chunks retrieved
         """
-        print(f"\nSearching for: '{query}'...")
+        if verbose:
+            print(f"\nSearching for: '{query}'...")
         
         # 1. Retrieve relevant context chunks
         search_results = self.vector_db.search(query, n_results=n_results)
         documents = search_results.get("documents", [])
         metadatas = search_results.get("metadatas", [])
+        distances = search_results.get("distances", [])
         
-        if not documents:
-            return "Mama Amaka: I couldn't find any recipes matching that in my cookbook. Try asking about jollof rice, egusi soup, or other Nigerian dishes!"
+        # Convert distances to similarity scores (ChromaDB uses distance, lower is better)
+        # Normalize to 0-1 scale where 1 is most similar
+        similarity_scores = []
+        if distances:
+            max_dist = max(distances) if distances else 1.0
+            similarity_scores = [1.0 - (d / max_dist) if max_dist > 0 else 1.0 for d in distances]
+        
+        # Filter by minimum similarity threshold
+        filtered_docs = []
+        filtered_metas = []
+        filtered_scores = []
+        
+        for i, (doc, score) in enumerate(zip(documents, similarity_scores)):
+            if score >= min_similarity:
+                filtered_docs.append(doc)
+                filtered_metas.append(metadatas[i] if i < len(metadatas) else {})
+                filtered_scores.append(score)
+        
+        if not filtered_docs:
+            if verbose:
+                print(f"⚠️  No relevant recipes found (similarity threshold: {min_similarity:.2f})")
+            return {
+                "answer": "Mama Amaka: I couldn't find any recipes matching that in my cookbook. Try asking about jollof rice, egusi soup, or other Nigerian dishes!",
+                "sources": [],
+                "similarity_scores": [],
+                "num_chunks": 0
+            }
+        
+        if verbose:
+            print(f"✓ Found {len(filtered_docs)} relevant recipe chunks")
+            if filtered_scores:
+                print(f"  Average similarity: {sum(filtered_scores)/len(filtered_scores):.2f}")
         
         # 2. Prepare context string from retrieved chunks
         context = ""
-        for i, doc in enumerate(documents):
-            # Safely get metadata with fallback
-            metadata = metadatas[i] if i < len(metadatas) and metadatas[i] else {}
+        sources = []
+        for i, doc in enumerate(filtered_docs):
+            metadata = filtered_metas[i] if i < len(filtered_metas) else {}
             source = metadata.get("source", "Unknown")
-            context += f"\n--- Recipe from {source} ---\n{doc}\n"
+            sources.append(source)
+            score_info = f" (relevance: {filtered_scores[i]:.2f})" if verbose else ""
+            context += f"\n--- Recipe from {source}{score_info} ---\n{doc}\n"
         
         # 3. Generate response using the chain (Step 7)
         try:
             answer = self.chain.invoke({"context": context, "question": query})
-            print(f"\nMama Amaka:\n{answer}")
-            return answer
+            if verbose:
+                print(f"\nMama Amaka:\n{answer}")
+            
+            return {
+                "answer": answer,
+                "sources": list(set(sources)),  # Unique sources
+                "similarity_scores": filtered_scores,
+                "num_chunks": len(filtered_docs)
+            }
         except Exception as e:
             error_msg = f"Error calling LLM: {e}"
-            print(error_msg)
-            return error_msg
+            if verbose:
+                print(error_msg)
+            return {
+                "answer": error_msg,
+                "sources": [],
+                "similarity_scores": [],
+                "num_chunks": 0
+            }
 
 
 def main():
@@ -204,7 +257,8 @@ def main():
             if not user_input:
                 continue
                 
-            agent.ask(user_input)
+            result = agent.ask(user_input, verbose=True)
+            # result is now a dict with 'answer', 'sources', 'similarity_scores', 'num_chunks'
             
         except KeyboardInterrupt:
             print("\nMama Amaka: O da bo!")
