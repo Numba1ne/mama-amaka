@@ -169,6 +169,13 @@ GOOGLE_MODEL=gemini-2.0-flash  # Optional, defaults to gemini-2.0-flash
 
 # Optional: Custom embedding model
 # EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# Optional: LangSmith Tracing (for debugging and monitoring)
+# Get your API key from: https://smith.langchain.com/
+# LANGSMITH_TRACING=true
+# LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
+# LANGSMITH_API_KEY="your_langsmith_api_key_here"
+# LANGSMITH_PROJECT="mama-amaka"
 ```
 
 ### Getting API Keys
@@ -176,6 +183,7 @@ GOOGLE_MODEL=gemini-2.0-flash  # Optional, defaults to gemini-2.0-flash
 1. **OpenAI**: https://platform.openai.com/api-keys
 2. **Groq**: https://console.groq.com/keys (Free tier available)
 3. **Google AI**: https://makersuite.google.com/app/apikey
+4. **LangSmith** (Optional): https://smith.langchain.com/ (For tracing and debugging)
 
 ### Environment Variables
 
@@ -252,6 +260,41 @@ Searching for: 'How do I make jollof rice?'...
 
 Mama Amaka:
 [Detailed response with recipe instructions from the knowledge base]
+```
+
+### Memory and Conversation Context
+
+The agent now remembers previous conversations! It maintains a conversation history that provides context for more coherent and relevant responses.
+
+**Available Memory Commands:**
+```
+You: history              # Show the last 5 conversation exchanges
+You: clear history        # Clear all conversation memory (fresh start)
+You: export              # Export the conversation to a text file
+You: summary             # Show conversation statistics
+```
+
+**How it works:**
+- Each message (both user queries and assistant responses) is stored in `conversation_history.json`
+- The agent uses the last 10 conversation turns as context when generating responses
+- This allows Mama Amaka to reference previous discussions and provide more contextual answers
+- Conversation history persists between sessions and can be exported for records
+
+**Example with Memory:**
+```
+You: How do I make jollof rice?
+Mama Amaka: [Recipe instructions for jollof rice]
+
+You: What about the seasoning?
+Mama Amaka: [Detailed seasoning information, referencing the previous jollof rice discussion]
+
+You: history
+--- Recent Conversation ---
+(1) You: How do I make jollof rice?
+    Mama: The foundation of jollof rice is the tomato base...
+
+(2) You: What about the seasoning?
+    Mama: The seasoning is crucial! Building on the base we discussed...
 ```
 
 ### Programmatic Usage
@@ -456,6 +499,35 @@ GROQ_MODEL=llama-3.1-8b-instant  # Options: llama-3.1-8b-instant, llama-3.1-70b-
 GOOGLE_API_KEY=your_key
 GOOGLE_MODEL=gemini-2.0-flash  # Options: gemini-2.0-flash, gemini-pro
 ```
+
+### LangSmith Tracing (Optional)
+
+LangSmith provides automatic tracing for all LangChain operations, enabling you to debug, monitor, and optimize your RAG pipeline. **No code changes required** - just set environment variables!
+
+**Setup:**
+
+1. **Get your LangSmith API key**: https://smith.langchain.com/
+2. **Add to your `.env` file**:
+   ```env
+   LANGSMITH_TRACING=true
+   LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
+   LANGSMITH_API_KEY="your_langsmith_api_key_here"
+   LANGSMITH_PROJECT="mama-amaka"
+   ```
+
+**What gets traced automatically:**
+- All LLM calls (ChatOpenAI, ChatGroq, ChatGoogleGenerativeAI)
+- Chain executions (prompt → LLM → parser)
+- Retrieval operations
+- Token usage and latency metrics
+
+**Benefits:**
+- Debug failed queries with full trace context
+- Monitor performance and costs
+- Optimize prompts and retrieval strategies
+- Track usage across different query types
+
+Once enabled, all traces will appear in your LangSmith dashboard at https://smith.langchain.com/
 
 ### Chunking Parameters
 
