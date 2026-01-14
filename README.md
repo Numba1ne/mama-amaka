@@ -576,6 +576,14 @@ Final Answer
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Maintenance and Support
+
+As an open-source initiative, Mama Amaka is actively maintained to ensure reliability and recipe accuracy.
+
+* **Version Control:** The project follows Semantic Versioning practices. Users can track major updates, bug fixes, and new feature releases directly on the [GitHub Releases page](https://github.com/Numba1ne/mama-amaka).
+* **Community Support:** We encourage users to report technical issues or suggest new features via the **Issues** tab on our GitHub repository.
+* **Contribution:** Community contributions are welcome! Detailed guidelines for submitting pull requests (for code or new recipes) can be found in the repository's `CONTRIBUTING.md` file.
+
 ## Contributing
 
 Contributions are welcome! Please follow these guidelines:
@@ -605,6 +613,15 @@ Contributions are welcome! Please follow these guidelines:
 - UI/Web interface
 - Multi-language support
 - Recipe image processing
+
+### Future Roadmap
+
+#### Addressing Capability Gaps: Conversation & Context
+
+To evolve Mama Amaka from a query-response tool into a true culinary assistant, the next phase of development focuses on **Conversational RAG Implementation**:
+
+* **Session Memory Management:** We are integrating **LangChain's ConversationBufferMemory** to persist chat history. This will allow the application to retain context across multiple turns (e.g., remembering you are cooking "Jollof Rice" when you subsequently ask "How much salt do I need?").
+* **Contextual Query Rewriting:** A pivotal upgrade will be the implementation of a **Conversational Retrieval Chain**. This component will use a secondary LLM call to rephrase follow-up questions that contain pronouns (like "it" or "that") into standalone queries before performing the vector search. This ensures that the retrieval mechanism always searches for "Jollof Rice salt quantity" rather than a vague "salt quantity," significantly improving retrieval accuracy for complex, multi-step cooking sessions.
 
 ## Changelog
 
